@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-slate-50 text-slate-900 antialiased;
+        background-image:
+            radial-gradient(at 0% 0%, hsla(230, 90%, 95%, 1) 0, transparent 50%),
+            radial-gradient(at 50% 0%, hsla(260, 80%, 97%, 1) 0, transparent 50%),
+            radial-gradient(at 100% 0%, hsla(280, 85%, 95%, 1) 0, transparent 50%);
+        background-attachment: fixed;
+    }
+}
+
+@layer components {
+    .glass-card {
+        @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-xl shadow-slate-200/50 rounded-2xl;
+    }
+
+    .premium-shadow {
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 5px 15px -5px rgba(0, 0, 0, 0.02);
+    }
+
+    .nav-active {
+        @apply bg-indigo-600/10 text-indigo-700 shadow-sm border border-indigo-100;
+    }
+}
