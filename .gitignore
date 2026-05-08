@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+**/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -15,34 +16,32 @@ package-lock.json
 .env.production.local
 .env.development.local
 .env.test.local
+**/.env
+**/.env.local
+**/.env.*.local
 
 # Build outputs
 dist/
 dist-ssr/
 build/
-*.local
+.next/
 out/
+**/dist/
+**/dist-ssr/
+**/build/
+**/.next/
+**/.parcel-cache/
+**/.vite/
 
 # Logs
 logs/
 *.log
 lerna-debug.log*
-
-# Frontend specific
-frontend/dist/
-frontend/dist-ssr/
-frontend/.vite/
-frontend/.parcel-cache/
-
-# Backend specific
-backend/logs/
-backend/uploads/
+**/logs/
 
 # IDE and Editor files
-.vscode/*
-!.vscode/extensions.json
+.vscode/
 .idea/
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
@@ -51,8 +50,6 @@ backend/uploads/
 *.swp
 *.swo
 *~
-.vscode/
-.idea
 *.iml
 
 # OS files
@@ -61,6 +58,10 @@ Thumbs.db
 .AppleDouble
 .LSOverride
 *.cab
+
+# Agent files
+.claude/
+plan.md
 
 # Test coverage
 coverage/
@@ -92,19 +93,9 @@ error.txt
 # Optional npm cache
 .npm
 
-# Optional eslint cache
-.eslintcache
-
-# Dependency directories
-frontend/node_modules/
-backend/node_modules/
-client/node_modules/
-
 # Optional REPL history
 .node_repl_history
 
 # Output of 'npm pack'
 *.tgz
-
-# dotenv environment variables file
-.env*.local
+serviceAccountKey.json

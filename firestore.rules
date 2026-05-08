@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn()  { return request.auth != null; }
+    function uid()         { return request.auth.uid; }
+    function isRole(r)     { return get(/databases/$(database)/documents/users/$(uid())).data.role == r; }
+    function isAdmin()     { return isRole('admin'); }
+    function isTailor()    { return isRole('tailor'); }
+    function isActive()    { return get(/databases/$(database)/documents/users/$(uid())).data.status == 'active'; }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (uid() == userId || isAdmin());
+      allow create: if isSignedIn() && uid() == userId
+                    && request.resource.data.role in ['customer','tailor','delivery']
+                    && request.resource.data.status in ['active','pending_approval'];
+      allow update: if isSignedIn() && (
+                      (uid() == userId && !('role' in request.resource.data.diff(resource.data).affectedKeys())
+                                       && !('status' in request.resource.data.diff(resource.data).affectedKeys()))
+                      || isAdmin()
+                    );
+      allow delete: if isAdmin();
+    }
+
+    match /customers/{id} {
+      allow read: if isSignedIn() && (isAdmin() || isTailor() || resource.data.linkedUserId == uid());
+      allow write: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+    }
+
+    match /measurements/{id} {
+      allow read: if isSignedIn() && (
+        isAdmin() || isTailor() ||
+        get(/databases/$(database)/documents/customers/$(resource.data.customerId)).data.linkedUserId == uid()
+      );
+      allow write: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+    }
+
+    match /measurementRequests/{id} {
+      allow read:   if isSignedIn() && (isAdmin() || isTailor() || resource.data.requestedBy == uid());
+      allow create: if isSignedIn() && request.resource.data.requestedBy == uid();
+      allow update: if isSignedIn() && (isAdmin() || isTailor());
+    }
+
+    match /orders/{id} {
+      allow read: if isSignedIn() && (
+        isAdmin() || isTailor() ||
+        resource.data.customerUid == uid() ||
+        resource.data.deliveryBy  == uid() ||
+        resource.data.pickupBy    == uid()
+      );
+      allow create: if isSignedIn() && isActive();
+      allow update: if isSignedIn() && (isAdmin() || isTailor() || resource.data.deliveryBy == uid() || resource.data.pickupBy == uid());
+      allow delete:  if isAdmin();
+    }
+
+    match /inventory/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+    }
+
+    match /deliveries/{id} {
+      allow read:  if isSignedIn() && (isAdmin() || resource.data.riderId == uid());
+      allow write: if isSignedIn() && (isAdmin() || resource.data.riderId == uid());
+    }
+
+    match /notifications/{id} {
+      allow read:   if isSignedIn() && resource.data.recipientUid == uid();
+      allow update: if isSignedIn() && resource.data.recipientUid == uid()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      allow create, delete: if isAdmin();
+    }
+  }
+}
