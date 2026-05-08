@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import {
   User,
   onAuthStateChanged,
@@ -30,22 +30,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [fbUser, setFbUser] = useState<User | null>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, async (u) => {
-      setFbUser(u);
-      if (u) {
-        const snap = await getDoc(doc(db, 'users', u.uid));
-        setAppUser(snap.exists() ? (snap.data() as AppUser) : null);
-      } else {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      try {
+        setFbUser(u);
+        if (u) {
+          const snap = await getDoc(doc(db, 'users', u.uid));
+          if (snap.exists()) {
+            setAppUser(snap.data() as AppUser);
+          } else {
+            setAppUser(null);
+          }
+        } else {
+          setAppUser(null);
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
         setAppUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
+
+    return () => unsubscribe();
   }, []);
 
   const signInEmail = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signUpEmail = async (
@@ -54,50 +75,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     displayName: string,
     role: Role
   ) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const status = role === 'tailor' || role === 'delivery' ? 'pending_approval' : 'active';
-    await setDoc(doc(db, 'users', cred.user.uid), {
-      uid: cred.user.uid,
-      email,
-      phone: null,
-      displayName,
-      photoURL: null,
-      role,
-      status,
-      authProviders: ['password'],
-      address: null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      approvedBy: null,
-      approvedAt: null,
-    });
+    setLoading(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const status = role === 'tailor' || role === 'delivery' ? 'pending_approval' : 'active';
+      const userData: Partial<AppUser> = {
+        uid: cred.user.uid,
+        email,
+        phone: null,
+        displayName,
+        photoURL: null,
+        role,
+        status,
+        authProviders: ['password'],
+        address: null,
+        createdAt: serverTimestamp() as any,
+        updatedAt: serverTimestamp() as any,
+        approvedBy: null,
+        approvedAt: null,
+      };
+      await setDoc(doc(db, 'users', cred.user.uid), userData);
+      setAppUser(userData as AppUser);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signInGoogle = async () => {
-    const cred = await signInWithPopup(auth, googleProvider);
-    const ref = doc(db, 'users', cred.user.uid);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      await setDoc(ref, {
-        uid: cred.user.uid,
-        email: cred.user.email,
-        phone: null,
-        displayName: cred.user.displayName ?? '',
-        photoURL: cred.user.photoURL,
-        role: 'customer',
-        status: 'active',
-        authProviders: ['google.com'],
-        address: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        approvedBy: null,
-        approvedAt: null,
-      });
+    setLoading(true);
+    try {
+      const cred = await signInWithPopup(auth, googleProvider);
+      const ref = doc(db, 'users', cred.user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        const userData: Partial<AppUser> = {
+          uid: cred.user.uid,
+          email: cred.user.email,
+          phone: null,
+          displayName: cred.user.displayName ?? '',
+          photoURL: cred.user.photoURL,
+          role: 'customer',
+          status: 'active',
+          authProviders: ['google.com'],
+          address: null,
+          createdAt: serverTimestamp() as any,
+          updatedAt: serverTimestamp() as any,
+          approvedBy: null,
+          approvedAt: null,
+        };
+        await setDoc(ref, userData);
+        setAppUser(userData as AppUser);
+      } else {
+        setAppUser(snap.data() as AppUser);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const resetPassword = (email: string) => sendPasswordResetEmail(auth, email);
-  const signOut = () => fbSignOut(auth);
+  
+  const signOut = async () => {
+    setLoading(true);
+    try {
+      await fbSignOut(auth);
+      setFbUser(null);
+      setAppUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AuthContext.Provider

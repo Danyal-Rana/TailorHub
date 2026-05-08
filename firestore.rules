@@ -3,16 +3,24 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn()  { return request.auth != null; }
     function uid()         { return request.auth.uid; }
-    function isRole(r)     { return get(/databases/$(database)/documents/users/$(uid())).data.role == r; }
+    
+    // Safely check for role/status without breaking if the document doesn't exist
+    function getSelf()     { return get(/databases/$(database)/documents/users/$(uid())); }
+    function selfExists()  { return exists(/databases/$(database)/documents/users/$(uid())); }
+    
+    function isRole(r)     { return selfExists() && getSelf().data.role == r; }
     function isAdmin()     { return isRole('admin'); }
     function isTailor()    { return isRole('tailor'); }
-    function isActive()    { return get(/databases/$(database)/documents/users/$(uid())).data.status == 'active'; }
+    function isActive()    { return selfExists() && getSelf().data.status == 'active'; }
 
     match /users/{userId} {
+      // Allow user to read their own doc OR if they are an admin
       allow read: if isSignedIn() && (uid() == userId || isAdmin());
+      
       allow create: if isSignedIn() && uid() == userId
                     && request.resource.data.role in ['customer','tailor','delivery']
                     && request.resource.data.status in ['active','pending_approval'];
+      
       allow update: if isSignedIn() && (
                       (uid() == userId && !('role' in request.resource.data.diff(resource.data).affectedKeys())
                                        && !('status' in request.resource.data.diff(resource.data).affectedKeys()))
@@ -29,7 +37,8 @@ service cloud.firestore {
     match /measurements/{id} {
       allow read: if isSignedIn() && (
         isAdmin() || isTailor() ||
-        get(/databases/$(database)/documents/customers/$(resource.data.customerId)).data.linkedUserId == uid()
+        (exists(/databases/$(database)/documents/customers/$(resource.data.customerId)) && 
+         get(/databases/$(database)/documents/customers/$(resource.data.customerId)).data.linkedUserId == uid())
       );
       allow write: if isSignedIn() && isActive() && (isAdmin() || isTailor());
     }
