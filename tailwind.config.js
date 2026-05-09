@@ -7,9 +7,13 @@ export default {
         brand: {
           50:  '#eef2ff',
           100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
           500: '#6366f1',
           600: '#4f46e5',
           700: '#4338ca',
+          800: '#3730a3',
           900: '#312e81',
           950: '#1e1b4b',
         },
@@ -20,8 +24,8 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        body:    ['Inter', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        body:    ['var(--font-body)', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         premium: '0 10px 30px -5px rgba(0,0,0,0.05), 0 5px 15px -5px rgba(0,0,0,0.02)',

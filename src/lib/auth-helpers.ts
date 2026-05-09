@@ -6,18 +6,25 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
-let recaptcha: RecaptchaVerifier | null = null;
+let recaptchaInstance: RecaptchaVerifier | null = null;
 
-export function initRecaptcha(containerId: string): RecaptchaVerifier {
-  if (!recaptcha) {
-    recaptcha = new RecaptchaVerifier(auth, containerId, { size: 'invisible' });
+function clearRecaptcha() {
+  if (recaptchaInstance) {
+    try { recaptchaInstance.clear(); } catch { /* already cleared */ }
+    recaptchaInstance = null;
   }
-  return recaptcha;
 }
 
 export async function sendOtp(phone: string): Promise<ConfirmationResult> {
-  const verifier = initRecaptcha('recaptcha-container');
-  return signInWithPhoneNumber(auth, phone, verifier);
+  // Always start with a fresh verifier — reusing a used/errored one silently fails
+  clearRecaptcha();
+  recaptchaInstance = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+  try {
+    return await signInWithPhoneNumber(auth, phone, recaptchaInstance);
+  } catch (e) {
+    clearRecaptcha();
+    throw e;
+  }
 }
 
 export async function verifyOtp(

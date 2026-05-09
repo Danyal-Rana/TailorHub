@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendOtp, verifyOtp } from '@/lib/auth-helpers';
 import { toast } from 'sonner';
-import { Mail, Phone, Lock, ArrowRight, Smartphone, Mail as MailIcon } from 'lucide-react';
+import { Mail, Phone, Lock, ArrowRight, Smartphone } from 'lucide-react';
 import { GoogleButton } from './GoogleButton';
 import Link from 'next/link';
 
@@ -18,6 +18,52 @@ const emailSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 type EmailFields = z.infer<typeof emailSchema>;
+
+function OtpBoxes({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const digits = value.padEnd(6, ' ').split('').slice(0, 6);
+
+  const handleChange = (i: number, raw: string) => {
+    const char = raw.replace(/\D/g, '').slice(-1);
+    const arr = digits.map((d, idx) => (idx === i ? char : d === ' ' ? '' : d));
+    onChange(arr.join('').trimEnd());
+    if (char && i < 5) refs.current[i + 1]?.focus();
+  };
+
+  const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !digits[i]?.trim() && i > 0) {
+      refs.current[i - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    onChange(pasted);
+    refs.current[Math.min(pasted.length, 5)]?.focus();
+    e.preventDefault();
+  };
+
+  return (
+    <div className="flex gap-2 justify-between" onPaste={handlePaste}>
+      {digits.map((d, i) => (
+        <input
+          key={i}
+          ref={(el) => { refs.current[i] = el; }}
+          value={d.trim()}
+          onChange={(e) => handleChange(i, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          maxLength={1}
+          inputMode="numeric"
+          className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2 transition-all outline-none ${
+            d.trim()
+              ? 'border-brand-600 bg-brand-50 text-brand-800'
+              : 'border-slate-200 bg-slate-50 focus:border-brand-400 focus:bg-white'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function LoginForm() {
   const [tab, setTab] = useState<Tab>('email');
@@ -31,6 +77,7 @@ export function LoginForm() {
   } = useForm<EmailFields>({ resolver: zodResolver(emailSchema) });
 
   const [phone, setPhone] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [confirmation, setConfirmation] = useState<Awaited<ReturnType<typeof sendOtp>> | null>(null);
   const [otp, setOtp] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
@@ -45,92 +92,90 @@ export function LoginForm() {
   });
 
   const onSendOtp = async () => {
+    if (!phone.trim()) { toast.error('Enter your phone number'); return; }
     setOtpLoading(true);
     try {
       const c = await sendOtp(phone);
       setConfirmation(c);
-      toast.success('OTP sent successfully');
+      toast.success('Code sent to ' + phone);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Failed to send OTP');
+      toast.error(e instanceof Error ? e.message : 'Failed to send code');
     } finally {
       setOtpLoading(false);
     }
   };
 
   const onVerifyOtp = async () => {
-    if (!confirmation) return;
+    if (!confirmation || otp.length < 6) return;
     setOtpLoading(true);
     try {
-      await verifyOtp(confirmation, otp, 'New User');
+      await verifyOtp(confirmation, otp, displayName || 'User');
       router.push('/dashboard');
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Invalid OTP code');
+      toast.error(e instanceof Error ? e.message : 'Invalid code — try again');
+      setOtp('');
     } finally {
       setOtpLoading(false);
     }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Tab Switcher */}
+    <div className="space-y-6">
+      {/* recaptcha anchor — must stay in DOM whenever phone auth is possible */}
+      <div id="recaptcha-container" />
+
+      {/* Tab switcher */}
       <div className="flex bg-slate-100 rounded-2xl p-1">
-        <button
-          type="button"
-          onClick={() => setTab('email')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
-            tab === 'email' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <MailIcon className="w-4 h-4" />
-          Email
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('phone')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
-            tab === 'phone' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          <Smartphone className="w-4 h-4" />
-          Phone
-        </button>
+        {(['email', 'phone'] as Tab[]).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${
+              tab === t ? 'bg-white shadow-sm text-brand-600' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t === 'email' ? <Mail className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
+            {t === 'email' ? 'Email' : 'Phone'}
+          </button>
+        ))}
       </div>
 
       {tab === 'email' && (
-        <form onSubmit={onEmailSubmit} className="space-y-5">
-          <div className="space-y-4">
+        <form onSubmit={onEmailSubmit} className="space-y-4">
+          <div className="relative">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+            <input
+              {...register('email')}
+              type="email"
+              placeholder="you@email.com"
+              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-400 transition-all"
+            />
+            {errors.email && <p className="text-rose-500 text-sm mt-1 ml-1">{errors.email.message}</p>}
+          </div>
+
+          <div>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                {...register('email')}
-                type="email"
-                placeholder="you@email.com"
-                className="w-full pl-12 pr-4 py-4 rounded-2xl border bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
-              />
-              {errors.email && <p className="text-rose-500 text-sm mt-1 ml-2">{errors.email.message}</p>}
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
               <input
                 {...register('password')}
                 type="password"
                 placeholder="••••••••"
-                className="w-full pl-12 pr-4 py-4 rounded-2xl border bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-400 transition-all"
               />
-              {errors.password && <p className="text-rose-500 text-sm mt-1 ml-2">{errors.password.message}</p>}
             </div>
-          </div>
-          
-          <div className="text-right">
-            <Link href="/forgot-password" size="sm" className="text-sm font-bold text-indigo-600 hover:underline">
-              Forgot password?
-            </Link>
+            {errors.password && <p className="text-rose-500 text-sm mt-1 ml-1">{errors.password.message}</p>}
+            <div className="text-right mt-2">
+              <Link href="/forgot-password" className="text-sm font-semibold text-brand-600 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+            className="w-full py-4 bg-brand-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-brand-700 transition-all shadow-lg shadow-brand-200 disabled:opacity-50"
           >
             {isSubmitting ? 'Signing in…' : 'Sign In'}
             <ArrowRight className="w-5 h-5" />
@@ -139,54 +184,60 @@ export function LoginForm() {
       )}
 
       {tab === 'phone' && (
-        <div className="space-y-5">
-          <div id="recaptcha-container" />
+        <div className="space-y-4">
           {!confirmation ? (
             <>
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <div>
+                <label className="text-sm font-semibold text-slate-600 mb-1.5 block">Your name</label>
                 <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+92 300 1234567"
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl border bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Full name"
+                  className="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-400 transition-all"
                 />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-600 mb-1.5 block">Phone number</label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+92 300 1234567"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-400 transition-all"
+                  />
+                </div>
               </div>
               <button
                 type="button"
                 onClick={onSendOtp}
                 disabled={otpLoading}
-                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+                className="w-full py-4 bg-brand-600 text-white rounded-2xl font-bold hover:bg-brand-700 transition-all shadow-lg shadow-brand-200 disabled:opacity-50"
               >
-                {otpLoading ? 'Sending OTP…' : 'Send Verification Code'}
+                {otpLoading ? 'Sending…' : 'Send Verification Code'}
               </button>
             </>
           ) : (
             <>
-              <div className="space-y-2">
-                <input
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="000000"
-                  className="w-full px-4 py-6 rounded-2xl border bg-slate-50 tracking-[1em] text-center text-3xl font-bold focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
-                  maxLength={6}
-                />
-                <p className="text-center text-xs text-slate-500 font-medium">Enter the 6-digit code sent to your phone</p>
+              <div className="text-center">
+                <p className="text-slate-700 font-semibold">Enter the 6-digit code</p>
+                <p className="text-slate-500 text-sm mt-1">Sent to <span className="font-medium">{phone}</span></p>
               </div>
+              <OtpBoxes value={otp} onChange={setOtp} />
               <button
                 type="button"
                 onClick={onVerifyOtp}
-                disabled={otpLoading}
-                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50"
+                disabled={otpLoading || otp.length < 6}
+                className="w-full py-4 bg-brand-600 text-white rounded-2xl font-bold hover:bg-brand-700 transition-all shadow-lg shadow-brand-200 disabled:opacity-50"
               >
                 {otpLoading ? 'Verifying…' : 'Verify & Sign In'}
               </button>
-              <button 
+              <button
                 type="button"
-                onClick={() => setConfirmation(null)}
-                className="w-full text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                onClick={() => { setConfirmation(null); setOtp(''); }}
+                className="w-full text-sm font-semibold text-slate-500 hover:text-slate-700 transition-colors"
               >
-                Change Phone Number
+                ← Change phone number
               </button>
             </>
           )}
@@ -195,7 +246,7 @@ export function LoginForm() {
 
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-slate-100" />
-        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">OR</span>
+        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">or</span>
         <div className="flex-1 h-px bg-slate-100" />
       </div>
 
@@ -203,7 +254,7 @@ export function LoginForm() {
 
       <p className="text-center text-slate-500 text-sm">
         Don&apos;t have an account?{' '}
-        <Link href="/signup" className="text-indigo-600 font-bold hover:underline">
+        <Link href="/signup" className="text-brand-600 font-bold hover:underline">
           Create one now
         </Link>
       </p>
