@@ -7,7 +7,7 @@ import Image from 'next/image';
 interface AvatarUploadProps {
   value: string | null;
   onChange: (url: string) => void;
-  folder?: 'profiles' | 'dresses' | 'inventory';
+  folder?: 'profiles' | 'dresses' | 'inventory' | 'proofs';
 }
 
 export function AvatarUpload({ value, onChange, folder = 'profiles' }: AvatarUploadProps) {

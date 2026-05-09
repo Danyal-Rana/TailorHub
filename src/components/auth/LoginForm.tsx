@@ -13,6 +13,15 @@ import Link from 'next/link';
 
 type Tab = 'email' | 'phone';
 
+const DEV_ACCOUNTS =
+  process.env.NODE_ENV === 'development'
+    ? [
+        { label: 'Tailor',   email: 'kareem@tailorhub.dev', password: 'SeedUser@123', bg: 'bg-violet-100 hover:bg-violet-200 text-violet-800' },
+        { label: 'Customer', email: 'ayesha@example.com',   password: 'SeedUser@123', bg: 'bg-sky-100 hover:bg-sky-200 text-sky-800' },
+        { label: 'Delivery', email: 'rider@tailorhub.dev',  password: 'SeedUser@123', bg: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800' },
+      ]
+    : [];
+
 const emailSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -73,8 +82,26 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<EmailFields>({ resolver: zodResolver(emailSchema) });
+
+  const [devLoading, setDevLoading] = useState<string | null>(null);
+
+  const devLogin = async (email: string, password: string, label: string) => {
+    setTab('email');
+    setValue('email', email);
+    setValue('password', password);
+    setDevLoading(label);
+    try {
+      await signInEmail(email, password);
+      router.push('/dashboard');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Dev login failed');
+    } finally {
+      setDevLoading(null);
+    }
+  };
 
   const [phone, setPhone] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -258,6 +285,28 @@ export function LoginForm() {
           Create one now
         </Link>
       </p>
+
+      {DEV_ACCOUNTS.length > 0 && (
+        <div className="border border-dashed border-amber-300 rounded-2xl p-4 bg-amber-50/60 space-y-3">
+          <p className="text-xs font-bold text-amber-600 uppercase tracking-widest text-center">
+            Dev Quick Login
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {DEV_ACCOUNTS.map(({ label, email, password, bg }) => (
+              <button
+                key={label}
+                type="button"
+                disabled={devLoading !== null}
+                onClick={() => devLogin(email, password, label)}
+                className={`py-2.5 rounded-xl text-sm font-bold transition-all ${bg} disabled:opacity-50`}
+              >
+                {devLoading === label ? '…' : label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-amber-500 text-center">Fills credentials &amp; signs in automatically</p>
+        </div>
+      )}
     </div>
   );
 }

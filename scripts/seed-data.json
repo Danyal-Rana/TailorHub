@@ -1,11 +1,11 @@
 {
   "users": [
-    { "uid": "admin_seed_01", "email": "admin@tailorhub.local", "displayName": "TailorHub Admin", "role": "admin", "status": "active" },
-    { "uid": "tailor_seed_01", "email": "kareem@tailorhub.local", "displayName": "Kareem Master", "role": "tailor", "status": "active" },
-    { "uid": "tailor_seed_02", "email": "ali@tailorhub.local", "displayName": "Ali Stitches", "role": "tailor", "status": "pending_approval" },
+    { "uid": "admin_seed_01", "email": "admin@tailorhub.dev", "displayName": "TailorHub Admin", "role": "admin", "status": "active" },
+    { "uid": "tailor_seed_01", "email": "kareem@tailorhub.dev", "displayName": "Kareem Master", "role": "tailor", "status": "active" },
+    { "uid": "tailor_seed_02", "email": "ali@tailorhub.dev", "displayName": "Ali Stitches", "role": "tailor", "status": "pending_approval" },
     { "uid": "customer_seed_01", "email": "ayesha@example.com", "displayName": "Ayesha Khan", "role": "customer", "status": "active" },
     { "uid": "customer_seed_02", "email": "bilal@example.com", "displayName": "Bilal Ahmed", "role": "customer", "status": "active" },
-    { "uid": "delivery_seed_01", "email": "rider@tailorhub.local", "displayName": "Usman Rider", "role": "delivery", "status": "active" }
+    { "uid": "delivery_seed_01", "email": "rider@tailorhub.dev", "displayName": "Usman Rider", "role": "delivery", "status": "active" }
   ],
   "customers": [
     { "id": "cust_01", "linkedUserId": "customer_seed_01", "name": "Ayesha Khan", "phone": "+923001112222", "email": "ayesha@example.com", "address": "Lahore, PK" },
@@ -13,15 +13,71 @@
     { "id": "cust_03", "linkedUserId": null, "name": "Walk-in Fatima", "phone": "+923005556666", "email": null, "address": "Islamabad, PK" }
   ],
   "measurements": [
-    { "id": "m_01", "customerId": "cust_01", "takenBy": "tailor_seed_01", "chest":36,"waist":30,"hips":38,"shoulder":16,"sleeves":24,"length":42,"inseam":30,"neck":15,"unit":"inches","notes":"Slim fit preferred","version":1 }
+    {
+      "id": "m_01", "customerId": "cust_01", "takenBy": "tailor_seed_01",
+      "chest": 36, "waist": 30, "hips": 38, "shoulder": 16,
+      "sleeves": 24, "length": 42, "inseam": 30, "neck": 15,
+      "unit": "inches", "notes": "Slim fit preferred", "version": 1
+    }
   ],
   "orders": [
-    { "id": "o_01", "customerId": "cust_01", "customerUid": "customer_seed_01", "measurementId": "m_01", "assignedTailor": "tailor_seed_01", "dressType": "Shalwar Kameez", "fabricDetails": "Cotton, navy blue", "fabricImages": [], "designImages": [], "price": 5000, "advancePaid": 2000, "status": "in_progress", "notes": "Eid order" },
-    { "id": "o_02", "customerId": "cust_02", "customerUid": "customer_seed_02", "measurementId": null, "assignedTailor": "tailor_seed_01", "dressType": "Suit", "fabricDetails": "Wool blend, charcoal", "fabricImages": [], "designImages": [], "price": 18000, "advancePaid": 5000, "status": "pending", "notes": "" }
+    {
+      "id": "o_01", "customerId": "cust_01", "customerUid": "customer_seed_01",
+      "measurementId": "m_01", "assignedTailor": "tailor_seed_01",
+      "dressType": "Shalwar Kameez", "fabricDetails": "Cotton, navy blue",
+      "fabricImages": [], "designImages": [],
+      "price": 5000, "advancePaid": 2000, "status": "in_progress", "notes": "Eid order"
+    },
+    {
+      "id": "o_02", "customerId": "cust_02", "customerUid": "customer_seed_02",
+      "measurementId": null, "assignedTailor": "tailor_seed_01",
+      "dressType": "Suit", "fabricDetails": "Wool blend, charcoal",
+      "fabricImages": [], "designImages": [],
+      "price": 18000, "advancePaid": 5000, "status": "pending", "notes": ""
+    },
+    {
+      "id": "o_03", "customerId": "cust_03", "customerUid": null,
+      "measurementId": null, "assignedTailor": null,
+      "dressType": "Lawn Shirt", "fabricDetails": "Lawn, white floral",
+      "fabricImages": [], "designImages": [],
+      "price": 2500, "advancePaid": 1000, "status": "measurement_needed", "notes": "Walk-in customer"
+    }
   ],
   "inventory": [
     { "id": "inv_01", "name": "Cotton Fabric", "category": "Fabric", "stock": 120, "unit": "meters", "minStock": 30, "pricePerUnit": 250, "supplier": "Lahore Textiles" },
     { "id": "inv_02", "name": "Brass Buttons", "category": "Button", "stock": 8, "unit": "pieces", "minStock": 100, "pricePerUnit": 15, "supplier": "Karachi Trims" },
-    { "id": "inv_03", "name": "Polyester Thread", "category": "Thread", "stock": 60, "unit": "spools", "minStock": 20, "pricePerUnit": 80, "supplier": "Faisalabad Threads" }
+    { "id": "inv_03", "name": "Polyester Thread", "category": "Thread", "stock": 60, "unit": "spools", "minStock": 20, "pricePerUnit": 80, "supplier": "Faisalabad Threads" },
+    { "id": "inv_04", "name": "Metal Zippers", "category": "Zipper", "stock": 45, "unit": "pieces", "minStock": 50, "pricePerUnit": 35, "supplier": "Sialkot Hardware" },
+    { "id": "inv_05", "name": "Silk Lining", "category": "Fabric", "stock": 25, "unit": "meters", "minStock": 10, "pricePerUnit": 600, "supplier": "Lahore Textiles" }
+  ],
+  "deliveries": [
+    {
+      "id": "del_01", "orderId": "o_01", "type": "delivery",
+      "riderId": "delivery_seed_01", "status": "assigned",
+      "pickupAddress": "TailorHub Workshop, Gulberg III, Lahore",
+      "dropAddress": "House 12, Block D, Model Town, Lahore",
+      "scheduledAt": "2025-05-15T14:00:00Z", "completedAt": null, "proofImageURL": null
+    }
+  ],
+  "measurementRequests": [
+    {
+      "id": "mr_01", "customerId": "cust_02", "requestedBy": "customer_seed_02",
+      "reason": "first_time", "message": "Need measurements taken for suit order",
+      "status": "pending", "scheduledFor": null, "assignedTailor": null
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_01", "recipientUid": "customer_seed_01",
+      "type": "order_status", "title": "Order in Progress",
+      "body": "Your Shalwar Kameez order is now being stitched.",
+      "link": "/orders/o_01", "isRead": false, "metadata": { "orderId": "o_01" }
+    },
+    {
+      "id": "notif_02", "recipientUid": "tailor_seed_01",
+      "type": "new_order", "title": "New Order Assigned",
+      "body": "Suit order from Bilal Ahmed has been assigned to you.",
+      "link": "/orders/o_02", "isRead": false, "metadata": { "orderId": "o_02" }
+    }
   ]
 }

@@ -27,7 +27,7 @@ type Customer = {
 };
 
 export function CustomersView() {
-  const { user } = useAuth();
+  const { fbUser: user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);

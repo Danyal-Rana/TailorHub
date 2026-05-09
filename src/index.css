@@ -29,4 +29,12 @@
     .btn-primary {
         @apply px-6 py-3 bg-brand-600 text-white rounded-2xl font-bold hover:bg-brand-700 transition-all shadow-lg shadow-brand-200 disabled:opacity-50 flex items-center justify-center gap-2;
     }
+
+    .btn-ghost {
+        @apply px-4 py-2 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all border border-slate-200 hover:border-slate-300;
+    }
+
+    .shadow-premium {
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.04);
+    }
 }

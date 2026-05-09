@@ -9,8 +9,8 @@ import { useRouter } from 'next/navigation';
 export function MeasurementRequestForm() {
   const { appUser } = useAuth();
   const router = useRouter();
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm({
-    defaultValues: { reason: 'first_time' }
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm<{ reason: string; message: string }>({
+    defaultValues: { reason: 'first_time', message: '' }
   });
 
   const onSubmit = handleSubmit(async (data) => {

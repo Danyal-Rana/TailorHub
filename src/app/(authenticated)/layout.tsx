@@ -1,12 +1,11 @@
 'use client';
 import { AuthGate } from '@/components/auth/AuthGate';
+import { AppShell } from '@/components/layout/AppShell';
 
 export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGate>
-      <div className="min-h-screen bg-slate-50/50">
-        {children}
-      </div>
+      <AppShell>{children}</AppShell>
     </AuthGate>
   );
 }

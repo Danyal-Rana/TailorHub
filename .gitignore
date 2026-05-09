@@ -97,3 +97,4 @@ error.txt
 # Output of 'npm pack'
 *.tgz
 serviceAccountKey.json
+*firebase-adminsdk*.json

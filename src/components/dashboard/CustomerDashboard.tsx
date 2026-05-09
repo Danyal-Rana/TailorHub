@@ -31,7 +31,7 @@ export function CustomerDashboard() {
         <div className="flex-1" />
         <div className="flex gap-3 w-full md:w-auto">
           <Link href="/orders/new" className="btn-primary flex-1 md:flex-none px-6 py-3 text-center">Place New Order</Link>
-          <Link href="/measurements/request" className="btn-ghost flex-1 md:flex-none px-6 py-3 text-center bg-white border border-slate-200 rounded-2xl hover:border-brand-300 font-bold">Request Measurement</Link>
+          <Link href="/measurements/request" className="flex-1 md:flex-none px-6 py-3 text-center bg-white border border-slate-200 rounded-2xl hover:border-brand-400 hover:bg-slate-50 font-bold text-slate-700 transition-all">Request Measurement</Link>
         </div>
       </div>
 

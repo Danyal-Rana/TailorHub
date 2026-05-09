@@ -1,4 +1,4 @@
-import { MapPin, Package, Clock, CheckCircle } from 'lucide-react';
+import { MapPin, Clock, CheckCircle } from 'lucide-react';
 import { StatusBadge } from '@/components/orders/StatusBadge';
 
 export function DeliveryCard({ delivery, onClick }: { delivery: any; onClick: () => void }) {
