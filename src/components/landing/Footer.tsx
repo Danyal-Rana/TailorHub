@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Scissors, Github, Twitter, Instagram } from 'lucide-react';
+import { Scissors, Code2, Share2, Camera } from 'lucide-react';
 
 const LINKS = {
   Product: [
@@ -35,7 +35,7 @@ export function Footer() {
               The complete platform for tailors, customers, and delivery partners across Pakistan.
             </p>
             <div className="flex gap-3">
-              {[Github, Twitter, Instagram].map((Icon, i) => (
+              {[Code2, Share2, Camera].map((Icon, i) => (
                 <a
                   key={i}
                   href="#"

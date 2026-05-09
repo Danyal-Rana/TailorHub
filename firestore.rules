@@ -1,54 +1,66 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn()  { return request.auth != null; }
-    function uid()         { return request.auth.uid; }
-    
-    // Safely check for role/status without breaking if the document doesn't exist
-    function getSelf()     { return get(/databases/$(database)/documents/users/$(uid())); }
-    function selfExists()  { return exists(/databases/$(database)/documents/users/$(uid())); }
-    
-    function isRole(r)     { return selfExists() && getSelf().data.role == r; }
-    function isAdmin()     { return isRole('admin'); }
-    function isTailor()    { return isRole('tailor'); }
-    function isActive()    { return selfExists() && getSelf().data.status == 'active'; }
+    function isSignedIn() { return request.auth != null; }
+    function uid()        { return request.auth.uid; }
 
+    function getSelf()    { return get(/databases/$(database)/documents/users/$(uid())); }
+    function selfExists() { return exists(/databases/$(database)/documents/users/$(uid())); }
+
+    function isAdmin()  { return isSignedIn() && selfExists() && getSelf().data.role == 'admin'; }
+    function isTailor() { return isSignedIn() && selfExists() && getSelf().data.role == 'tailor'; }
+    function isActive() { return isSignedIn() && selfExists() && getSelf().data.status == 'active'; }
+
+    // ── Users ──────────────────────────────────────────────────────────────
     match /users/{userId} {
-      // Allow user to read their own doc OR if they are an admin
-      allow read: if isSignedIn() && (uid() == userId || isAdmin());
-      
+      // get: own doc or admin | list: admin only (blocks non-admins from querying the collection)
+      allow get:  if isSignedIn() && (uid() == userId || isAdmin());
+      allow list: if isAdmin();
+
       allow create: if isSignedIn() && uid() == userId
-                    && request.resource.data.role in ['customer','tailor','delivery']
-                    && request.resource.data.status in ['active','pending_approval'];
-      
+                    && request.resource.data.role in ['customer', 'tailor', 'delivery']
+                    && request.resource.data.status in ['active', 'pending_approval'];
+
+      // Non-admins may not change role or status (only admin can approve/reject)
       allow update: if isSignedIn() && (
-                      (uid() == userId && !('role' in request.resource.data.diff(resource.data).affectedKeys())
-                                       && !('status' in request.resource.data.diff(resource.data).affectedKeys()))
+                      (uid() == userId
+                        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status']))
                       || isAdmin()
                     );
+
       allow delete: if isAdmin();
     }
 
+    // ── Customers ──────────────────────────────────────────────────────────
     match /customers/{id} {
-      allow read: if isSignedIn() && (isAdmin() || isTailor() || resource.data.linkedUserId == uid());
-      allow write: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow read:   if isSignedIn() && (isAdmin() || isTailor()
+                      || resource.data.linkedUserId == uid());
+      allow create: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow update: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow delete: if isAdmin();
     }
 
+    // ── Measurements ───────────────────────────────────────────────────────
     match /measurements/{id} {
       allow read: if isSignedIn() && (
         isAdmin() || isTailor() ||
-        (exists(/databases/$(database)/documents/customers/$(resource.data.customerId)) && 
+        (exists(/databases/$(database)/documents/customers/$(resource.data.customerId)) &&
          get(/databases/$(database)/documents/customers/$(resource.data.customerId)).data.linkedUserId == uid())
       );
-      allow write: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow create: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow update: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow delete: if isAdmin();
     }
 
+    // ── Measurement Requests ───────────────────────────────────────────────
     match /measurementRequests/{id} {
       allow read:   if isSignedIn() && (isAdmin() || isTailor() || resource.data.requestedBy == uid());
       allow create: if isSignedIn() && request.resource.data.requestedBy == uid();
       allow update: if isSignedIn() && (isAdmin() || isTailor());
+      allow delete: if isAdmin();
     }
 
+    // ── Orders ─────────────────────────────────────────────────────────────
     match /orders/{id} {
       allow read: if isSignedIn() && (
         isAdmin() || isTailor() ||
@@ -57,25 +69,41 @@ service cloud.firestore {
         resource.data.pickupBy    == uid()
       );
       allow create: if isSignedIn() && isActive();
-      allow update: if isSignedIn() && (isAdmin() || isTailor() || resource.data.deliveryBy == uid() || resource.data.pickupBy == uid());
-      allow delete:  if isAdmin();
+      allow update: if isSignedIn() && (
+        isAdmin() || isTailor() ||
+        resource.data.deliveryBy == uid() ||
+        resource.data.pickupBy   == uid()
+      );
+      allow delete: if isAdmin();
     }
 
+    // ── Inventory ─────────────────────────────────────────────────────────
     match /inventory/{id} {
-      allow read:  if isSignedIn();
-      allow write: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow update: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow delete: if isSignedIn() && isActive() && (isAdmin() || isTailor());
     }
 
+    // ── Deliveries ────────────────────────────────────────────────────────
     match /deliveries/{id} {
-      allow read:  if isSignedIn() && (isAdmin() || resource.data.riderId == uid());
-      allow write: if isSignedIn() && (isAdmin() || resource.data.riderId == uid());
+      allow read:   if isSignedIn() && (isAdmin() || resource.data.riderId == uid());
+      // Deliveries are created by admins/tailors when dispatching an order
+      allow create: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      // Riders update status; admins can reassign
+      allow update: if isSignedIn() && (isAdmin() || resource.data.riderId == uid());
+      allow delete: if isAdmin();
     }
 
+    // ── Notifications ─────────────────────────────────────────────────────
     match /notifications/{id} {
       allow read:   if isSignedIn() && resource.data.recipientUid == uid();
+      // Only the recipient may flip isRead
       allow update: if isSignedIn() && resource.data.recipientUid == uid()
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
-      allow create, delete: if isAdmin();
+      // Admins and active tailors create notifications for order/delivery events
+      allow create: if isSignedIn() && isActive() && (isAdmin() || isTailor());
+      allow delete: if isAdmin();
     }
   }
 }
