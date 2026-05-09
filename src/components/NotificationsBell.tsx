@@ -1,5 +1,5 @@
 'use client';
-import { Bell, Check, AlertCircle } from 'lucide-react';
+import { Bell, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';

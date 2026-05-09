@@ -1,4 +1,4 @@
-import { doc, updateDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export async function markAsRead(id: string) {
