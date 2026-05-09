@@ -5,26 +5,37 @@ import type { Order } from '@/lib/types';
 
 export function OrderCard({ order }: { order: Order }) {
   return (
-    <Link href={`/orders/${order.id}`} className="block">
-      <div className="glass-card p-6 hover:shadow-premium transition-all hover:-translate-y-1">
-        <div className="flex justify-between items-start mb-4">
+    <Link href={`/orders/${order.id}`} className="block group">
+      <div className="glass-card p-5 hover:shadow-premium transition-all duration-200 group-hover:-translate-y-0.5">
+        <div className="flex justify-between items-start mb-3">
           <div>
-            <p className="text-sm font-bold text-slate-500">Order #{order.id.slice(0, 8).toUpperCase()}</p>
-            <h3 className="text-lg font-bold text-slate-900 mt-1">{order.dressType}</h3>
+            <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
+              #{order.id.slice(0, 8).toUpperCase()}
+            </p>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5 leading-snug">
+              {order.dressType}
+            </h3>
           </div>
           <StatusBadge status={order.status} />
         </div>
-        
-        <div className="space-y-2 mt-4">
-          <div className="flex items-center gap-2 text-slate-600 text-sm">
-            <User className="w-4 h-4 text-slate-400" />
-            <span>Customer ID: {order.customerId}</span>
+
+        <div className="space-y-1.5 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs">
+            <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+            <span className="truncate">Customer: {order.customerId.slice(0, 12)}...</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-600 text-sm">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span>Created: {order.createdAt?.toDate().toLocaleDateString()}</span>
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+            <span>{order.createdAt?.toDate().toLocaleDateString()}</span>
           </div>
         </div>
+
+        {order.price != null && (
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <span className="text-xs text-slate-400 dark:text-slate-500">Total</span>
+            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Rs. {order.price.toLocaleString()}</span>
+          </div>
+        )}
       </div>
     </Link>
   );

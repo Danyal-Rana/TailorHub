@@ -5,9 +5,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingBag, Users, Ruler, Package,
   Truck, Bell, UserCog, UserCheck, LogOut, Scissors,
-  Menu, X, User, ChevronDown,
+  Menu, X, User, ChevronDown, Sun, Moon,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useNavBadges } from '@/hooks/useNavBadges';
 import type { Role } from '@/lib/types';
 
@@ -53,6 +54,19 @@ const ROLE_BADGE: Record<Role, string> = {
   delivery: 'bg-emerald-100 text-emerald-700',
 };
 
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  return (
+    <button
+      onClick={toggle}
+      className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
+      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+    </button>
+  );
+}
+
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -76,11 +90,14 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           <Scissors className="w-5 h-5 text-white" />
         </div>
         <span className="text-xl font-display font-black">TailorHub</span>
-        {onClose && (
-          <button onClick={onClose} className="ml-auto text-slate-400 hover:text-white">
-            <X className="w-5 h-5" />
-          </button>
-        )}
+        <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
+          {onClose && (
+            <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-all">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Nav */}
@@ -155,9 +172,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, toggle } = useTheme();
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-64 flex-shrink-0 flex-col">
         <SidebarContent />
@@ -166,7 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile sidebar overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <aside className="relative z-50 w-64 h-full">
             <SidebarContent onClose={() => setMobileOpen(false)} />
           </aside>
@@ -176,10 +194,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile header */}
-        <header className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-200 flex-shrink-0">
+        <header className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 transition-colors">
           <button
             onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -187,12 +205,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center">
               <Scissors className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-black text-slate-900">TailorHub</span>
+            <span className="font-display font-black text-slate-900 dark:text-white">TailorHub</span>
+          </div>
+          <div className="ml-auto">
+            <button
+              onClick={toggle}
+              className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
           </div>
         </header>
 
         {/* Scrollable page content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </div>
