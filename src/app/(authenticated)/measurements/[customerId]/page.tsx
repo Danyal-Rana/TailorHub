@@ -53,7 +53,7 @@ export default function CustomerMeasurementsPage() {
 
         <div>
           <RoleGate allow={['admin', 'tailor']}>
-            <MeasurementForm customerId={customerId} existing={measurements[0]} onSaved={loadData} />
+            <MeasurementForm customerId={customerId} onSaved={loadData} />
           </RoleGate>
         </div>
       </div>

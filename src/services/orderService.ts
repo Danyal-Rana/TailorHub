@@ -23,3 +23,8 @@ export async function getOrder(id: string) {
   const s = await getDoc(doc(col,id));
   return s.exists() ? { id: s.id, ...(s.data() as any) } as Order : null;
 }
+
+export async function listOrdersByCustomer(customerId: string) {
+  const snap = await getDocs(query(col, where('customerId','==',customerId), orderBy('createdAt','desc')));
+  return snap.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as Order[];
+}

@@ -1,13 +1,13 @@
 'use client';
 import { useForm } from 'react-hook-form';
-import { createMeasurement, updateMeasurement } from '@/services/measurementService';
+import { createMeasurement } from '@/services/measurementService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function MeasurementForm({ customerId, existing, onSaved }: { customerId: string, existing?: any, onSaved: () => void }) {
+export function MeasurementForm({ customerId, onSaved }: { customerId: string; onSaved: () => void }) {
   const { appUser } = useAuth();
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm({ defaultValues: existing || { unit: 'inches' } });
+  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm({ defaultValues: { unit: 'inches' } });
   const fields = ['chest', 'waist', 'hips', 'shoulder', 'sleeves', 'length', 'inseam', 'neck'];
 
   const onSubmit = handleSubmit(async (data) => {
@@ -18,18 +18,13 @@ export function MeasurementForm({ customerId, existing, onSaved }: { customerId:
         takenBy: appUser.uid,
         unit: data.unit,
         notes: data.notes || '',
-        ...Object.fromEntries(fields.map(f => [f, data[f] ? Number(data[f]) : null]))
+        ...Object.fromEntries(fields.map(f => [f, (data as any)[f] ? Number((data as any)[f]) : null]))
       } as any;
-      
-      if (existing) {
-        await updateMeasurement(existing.id, payload, existing.version);
-        toast.success('Measurements updated!');
-      } else {
-        await createMeasurement(payload);
-        toast.success('Measurements recorded!');
-      }
+      await createMeasurement(payload);
+      toast.success('Measurements recorded!');
+      reset({ unit: 'inches' });
       onSaved();
-    } catch (e: any) {
+    } catch {
       toast.error('Failed to save measurements');
     }
   });
@@ -37,7 +32,7 @@ export function MeasurementForm({ customerId, existing, onSaved }: { customerId:
   return (
     <form onSubmit={onSubmit} className="glass-card p-6 space-y-6">
       <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-        <h2 className="text-xl font-bold text-slate-800">Record Measurements</h2>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white">Record New Measurements</h2>
         <select {...register('unit')} className="input-base px-4 py-2 border rounded-lg">
           <option value="inches">Inches</option>
           <option value="cm">Centimeters</option>
