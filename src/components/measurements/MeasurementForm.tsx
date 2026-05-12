@@ -17,7 +17,7 @@ export function MeasurementForm({ customerId, onSaved }: { customerId: string; o
         customerId,
         takenBy: appUser.uid,
         unit: data.unit,
-        notes: data.notes || '',
+        notes: (data as any).notes || '',
         ...Object.fromEntries(fields.map(f => [f, (data as any)[f] ? Number((data as any)[f]) : null]))
       } as any;
       await createMeasurement(payload);
