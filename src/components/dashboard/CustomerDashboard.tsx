@@ -1,17 +1,30 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Scissors, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { listOrdersForRole } from '@/services/orderService';
+import type { Order } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export function CustomerDashboard() {
   const { appUser } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    if (!appUser) return;
+    listOrdersForRole(appUser.role, appUser.uid).then(setOrders).catch(() => {});
+  }, [appUser]);
+
+  const total = orders.length;
+  const pending = orders.filter(o => ['pending', 'in_progress', 'measurement_needed'].includes(o.status)).length;
+  const completed = orders.filter(o => o.status === 'delivered').length;
 
   const stats = [
-    { label: 'Total Orders', value: '4', icon: ShoppingBag, color: 'text-blue-600 dark:text-blue-400',        bg: 'bg-blue-100 dark:bg-blue-900/30' },
-    { label: 'Pending',      value: '1', icon: Clock,        color: 'text-amber-600 dark:text-amber-400',      bg: 'bg-amber-100 dark:bg-amber-900/30' },
-    { label: 'Completed',    value: '3', icon: CheckCircle,  color: 'text-emerald-600 dark:text-emerald-400',  bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
+    { label: 'Total Orders', value: String(total),     icon: ShoppingBag, color: 'text-blue-600 dark:text-blue-400',        bg: 'bg-blue-100 dark:bg-blue-900/30' },
+    { label: 'Pending',      value: String(pending),   icon: Clock,        color: 'text-amber-600 dark:text-amber-400',      bg: 'bg-amber-100 dark:bg-amber-900/30' },
+    { label: 'Completed',    value: String(completed), icon: CheckCircle,  color: 'text-emerald-600 dark:text-emerald-400',  bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
   ];
 
   return (

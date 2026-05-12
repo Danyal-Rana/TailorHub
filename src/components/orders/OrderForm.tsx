@@ -1,16 +1,27 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createOrder } from '@/services/orderService';
+import { listCustomers } from '@/services/customerService';
 import { MultiImageUpload } from '@/components/shared/MultiImageUpload';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import type { Customer } from '@/lib/types';
 
 export function OrderForm() {
   const { appUser } = useAuth();
   const router = useRouter();
   const { register, handleSubmit, formState: { isSubmitting }, setValue, watch } = useForm();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+  useEffect(() => {
+    if (appUser?.role !== 'customer') {
+      listCustomers().then(setCustomers).catch(() => {});
+    }
+  }, [appUser?.role]);
   
   const fabricImages = watch('fabricImages') || [];
   const designImages = watch('designImages') || [];
@@ -49,9 +60,33 @@ export function OrderForm() {
         <h2 className="text-xl font-bold text-slate-800 border-b border-slate-100 pb-4">Order Details</h2>
         
         {appUser?.role !== 'customer' && (
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Customer ID</label>
-            <input {...register('customerId', { required: true })} className="input-base w-full border rounded-lg px-4 py-2" placeholder="Enter customer ID" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Customer Name</label>
+              <select
+                className="input-base w-full border rounded-lg px-4 py-2"
+                value={selectedCustomer?.id || ''}
+                onChange={(e) => {
+                  const customer = customers.find(c => c.id === e.target.value) || null;
+                  setSelectedCustomer(customer);
+                  setValue('customerId', customer?.id || '');
+                }}
+              >
+                <option value="">Select customer...</option>
+                {customers.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Customer ID</label>
+              <input
+                {...register('customerId', { required: true })}
+                className="input-base w-full border rounded-lg px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                placeholder="Auto-filled from name"
+                readOnly
+              />
+            </div>
           </div>
         )}
 
