@@ -64,6 +64,7 @@ export interface Order {
   id: string;
   customerId: string;
   customerUid: string | null;
+  customerName?: string;
   measurementId: string | null;
   assignedTailor: string | null;
   dressType: string;

@@ -22,7 +22,7 @@ export function OrderCard({ order }: { order: Order }) {
         <div className="space-y-1.5 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs">
             <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
-            <span className="truncate">Customer: {order.customerId.slice(0, 12)}...</span>
+            <span className="truncate">Customer: {order.customerName || `${order.customerId.slice(0, 10)}...`}</span>
           </div>
           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs">
             <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />

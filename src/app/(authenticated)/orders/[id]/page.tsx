@@ -39,7 +39,7 @@ export default function OrderDetailPage() {
   );
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
-    await updateOrderStatus(id, newStatus);
+    await updateOrderStatus(id, newStatus, order.customerUid);
     setOrder({ ...order, status: newStatus });
   };
 
@@ -67,8 +67,8 @@ export default function OrderDetailPage() {
             <h2 className="section-title">Order Details</h2>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="label-muted">Customer ID</p>
-                <p className="text-slate-900 dark:text-slate-100 font-medium mt-0.5">{order.customerId}</p>
+                <p className="label-muted">Customer</p>
+                <p className="text-slate-900 dark:text-slate-100 font-medium mt-0.5">{order.customerName || order.customerId}</p>
               </div>
               <div>
                 <p className="label-muted">Created</p>

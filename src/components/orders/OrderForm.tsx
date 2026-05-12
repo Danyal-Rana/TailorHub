@@ -32,6 +32,7 @@ export function OrderForm() {
       await createOrder({
         customerId: appUser.role === 'customer' ? appUser.uid : data.customerId,
         customerUid: appUser.role === 'customer' ? appUser.uid : null,
+        customerName: appUser.role === 'customer' ? appUser.displayName : selectedCustomer?.name || '',
         measurementId: null,
         assignedTailor: null,
         dressType: data.dressType,
