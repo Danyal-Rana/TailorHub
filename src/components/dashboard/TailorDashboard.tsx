@@ -138,14 +138,23 @@ export function TailorDashboard() {
           ) : (
             <div className="space-y-3">
               {pendingMeasurements.slice(0, 5).map((req: any) => (
-                <Link key={req.id} href={`/measurements/${req.customerId}`} className="block">
-                  <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40 hover:border-amber-300 transition-colors">
+                req.customerId ? (
+                  <Link key={req.id} href={`/measurements/${req.customerId}`} className="block">
+                    <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40 hover:border-amber-300 transition-colors">
+                      <p className="text-xs font-bold text-amber-700 dark:text-amber-400 capitalize">
+                        {req.reason?.replace('_', ' ')}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{req.message || 'No message'}</p>
+                    </div>
+                  </Link>
+                ) : (
+                  <div key={req.id} className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40">
                     <p className="text-xs font-bold text-amber-700 dark:text-amber-400 capitalize">
                       {req.reason?.replace('_', ' ')}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{req.message || 'No message'}</p>
                   </div>
-                </Link>
+                )
               ))}
             </div>
           )}

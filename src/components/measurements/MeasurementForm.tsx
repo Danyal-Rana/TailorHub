@@ -5,10 +5,32 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+type MeasurementFields = 'chest' | 'waist' | 'hips' | 'shoulder' | 'sleeves' | 'length' | 'inseam' | 'neck';
+
+interface MeasurementFormValues {
+  unit: string;
+  notes: string;
+  chest: string;
+  waist: string;
+  hips: string;
+  shoulder: string;
+  sleeves: string;
+  length: string;
+  inseam: string;
+  neck: string;
+}
+
+const MEASUREMENT_FIELDS: MeasurementFields[] = ['chest', 'waist', 'hips', 'shoulder', 'sleeves', 'length', 'inseam', 'neck'];
+
+const DEFAULT_VALUES: MeasurementFormValues = {
+  unit: 'inches', notes: '',
+  chest: '', waist: '', hips: '', shoulder: '',
+  sleeves: '', length: '', inseam: '', neck: '',
+};
+
 export function MeasurementForm({ customerId, onSaved }: { customerId: string; onSaved: () => void }) {
   const { appUser } = useAuth();
-  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm({ defaultValues: { unit: 'inches' } });
-  const fields = ['chest', 'waist', 'hips', 'shoulder', 'sleeves', 'length', 'inseam', 'neck'];
+  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<MeasurementFormValues>({ defaultValues: DEFAULT_VALUES });
 
   const onSubmit = handleSubmit(async (data) => {
     if (!appUser) return;
@@ -17,12 +39,12 @@ export function MeasurementForm({ customerId, onSaved }: { customerId: string; o
         customerId,
         takenBy: appUser.uid,
         unit: data.unit,
-        notes: (data as any).notes || '',
-        ...Object.fromEntries(fields.map(f => [f, (data as any)[f] ? Number((data as any)[f]) : null]))
+        notes: data.notes || '',
+        ...Object.fromEntries(MEASUREMENT_FIELDS.map(f => [f, data[f] ? Number(data[f]) : null]))
       } as any;
       await createMeasurement(payload);
       toast.success('Measurements recorded!');
-      reset({ unit: 'inches' });
+      reset(DEFAULT_VALUES);
       onSaved();
     } catch {
       toast.error('Failed to save measurements');
@@ -40,7 +62,7 @@ export function MeasurementForm({ customerId, onSaved }: { customerId: string; o
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {fields.map(f => (
+        {MEASUREMENT_FIELDS.map(f => (
           <div key={f}>
             <label className="block text-xs font-medium text-slate-500 capitalize mb-1">{f}</label>
             <input type="number" step="0.25" {...register(f)} className="input-base w-full border rounded-lg px-3 py-2 text-center" placeholder="0" />
