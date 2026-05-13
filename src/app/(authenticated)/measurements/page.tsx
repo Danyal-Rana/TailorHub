@@ -38,7 +38,8 @@ export default function MeasurementsPage() {
     if (appUser.role === 'customer') {
       getMyMeasurements(appUser.uid).then(m => { setMeasurements(m); setLoading(false); });
     } else {
-      Promise.all([listAllRequests(), listCustomers(), listActiveTailors()])
+      const tailorsPromise = appUser.role === 'admin' ? listActiveTailors() : Promise.resolve([]);
+      Promise.all([listAllRequests(), listCustomers(), tailorsPromise])
         .then(([reqs, custs, tailorList]) => {
           setRequests(reqs);
           setCustomers(custs);
@@ -219,31 +220,37 @@ export default function MeasurementsPage() {
 
                   {isActive && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-                      <select
-                        className="input-base border rounded-lg px-3 py-2 text-sm"
-                        value={currentAssign.tailorUid}
-                        onChange={e => setAssignState(prev => ({ ...prev, [req.id]: { ...currentAssign, tailorUid: e.target.value } }))}
-                      >
-                        <option value="">Select tailor...</option>
-                        {tailors.map(t => (
-                          <option key={t.uid} value={t.uid}>{t.displayName}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="date"
-                        className="input-base border rounded-lg px-3 py-2 text-sm"
-                        value={currentAssign.scheduledFor}
-                        onChange={e => setAssignState(prev => ({ ...prev, [req.id]: { ...currentAssign, scheduledFor: e.target.value } }))}
-                      />
+                      {appUser?.role === 'admin' && (
+                        <>
+                          <select
+                            className="input-base border rounded-lg px-3 py-2 text-sm"
+                            value={currentAssign.tailorUid}
+                            onChange={e => setAssignState(prev => ({ ...prev, [req.id]: { ...currentAssign, tailorUid: e.target.value } }))}
+                          >
+                            <option value="">Select tailor...</option>
+                            {tailors.map(t => (
+                              <option key={t.uid} value={t.uid}>{t.displayName}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="date"
+                            className="input-base border rounded-lg px-3 py-2 text-sm"
+                            value={currentAssign.scheduledFor}
+                            onChange={e => setAssignState(prev => ({ ...prev, [req.id]: { ...currentAssign, scheduledFor: e.target.value } }))}
+                          />
+                        </>
+                      )}
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAssign(req.id)}
-                          disabled={saving === req.id}
-                          className="btn-primary flex-1 py-2 text-sm flex items-center justify-center gap-1"
-                        >
-                          {saving === req.id ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                          Assign
-                        </button>
+                        {appUser?.role === 'admin' && (
+                          <button
+                            onClick={() => handleAssign(req.id)}
+                            disabled={saving === req.id}
+                            className="btn-primary flex-1 py-2 text-sm flex items-center justify-center gap-1"
+                          >
+                            {saving === req.id ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                            Assign
+                          </button>
+                        )}
                         <button
                           onClick={() => handleMarkComplete(req.id)}
                           disabled={saving === req.id}

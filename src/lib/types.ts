@@ -32,19 +32,43 @@ export interface Customer {
   updatedAt: Timestamp;
 }
 
+export type DressType = 'kameez' | 'shalwar' | 'shalwar_kameez' | 'other';
+
+export interface CustomNote {
+  title: string;
+  description: string;
+}
+
 export interface Measurement {
   id: string;
   customerId: string;
   takenBy: string;
-  chest: number | null;
-  waist: number | null;
-  hips: number | null;
-  shoulder: number | null;
-  sleeves: number | null;
-  length: number | null;
-  inseam: number | null;
-  neck: number | null;
+  dressType?: DressType;
+  // Kameez / قمیض
+  kameezLength?: number | null;
+  kameezShoulder?: number | null;
+  kameezSleeves?: number | null;
+  kameezNeck?: number | null;
+  kameezChest?: number | null;
+  kameezWaist?: number | null;
+  kameezArmhole?: number | null;
+  kameezCuff?: number | null;
+  kameezCuffWidth?: number | null;
+  // Shalwar / شلوار
+  shalwarLength?: number | null;
+  shalwarWidth?: number | null;
+  shalwarPancha?: number | null;
+  // Legacy generic fields
+  chest?: number | null;
+  waist?: number | null;
+  hips?: number | null;
+  shoulder?: number | null;
+  sleeves?: number | null;
+  length?: number | null;
+  inseam?: number | null;
+  neck?: number | null;
   notes: string;
+  customNotes?: CustomNote[];
   unit: 'inches' | 'cm';
   version: number;
   createdAt: Timestamp;
