@@ -1,6 +1,6 @@
 # TailorHub
 
-**A full-stack tailor shop management platform that digitises order tracking, customer measurements, inventory, and delivery workflows — with role-based access and real-time notifications.**
+**One-liner:** A full-stack tailor shop management platform that digitises order tracking, customer measurements, inventory, and delivery workflows — with role-based access and real-time notifications.
 
 ---
 
@@ -15,7 +15,7 @@ TailorHub replaces the paper-based workflow with a web platform where every acto
 ### Key Value Proposition
 - **Zero lag notifications** — Redis Pub/Sub via Server-Sent Events delivers order updates sub-second, without polling.
 - **Firestore cost reduction** — Order list queries are cached in Redis (60 s TTL), cutting Firestore reads on every page load.
-- **Multi-role access** — One codebase, four distinct experiences enforced at both the UI and Firestore security rules level.
+- **Multi-role access** — One codebase, four distinct experiences (admin / tailor / customer / delivery) enforced at both the UI and Firestore security rules level.
 - **Urdu-first measurements** — Measurement fields are labelled in Urdu (قمیض / شلوار) to match the native vocabulary of the tailor trade in Pakistan.
 
 ---
@@ -151,7 +151,7 @@ Firestore was chosen over a relational DB for its real-time `onSnapshot` capabil
 
 ---
 
-## 7. Deployment
+## 7. Deployment & DevOps
 
 ### Strategy
 - **Platform:** Vercel — `output: 'standalone'` Next.js build, auto-deployed on push to `main`
@@ -161,7 +161,7 @@ Firestore was chosen over a relational DB for its real-time `onSnapshot` capabil
 - **Auth providers:** Email/password, Google OAuth, Phone (SMS via RecaptchaVerifier)
 
 ### Live Demo
-[Live Demo](https://tailorhub-fyp.vercel.app/)
+[Insert Vercel URL here]
 
 ### API Endpoints
 
@@ -175,165 +175,6 @@ Firestore was chosen over a relational DB for its real-time `onSnapshot` capabil
 
 ---
 
-## Local Setup
+## 8. Repository Access
 
-### Prerequisites
-
-| Tool | Version |
-|---|---|
-| Node.js | 18+ |
-| npm | 9+ |
-| Firebase CLI | latest (`npm i -g firebase-tools`) |
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/Danyal-Rana/tailorhub.git
-cd tailorhub
-npm install
-```
-
-### 2. Firebase setup
-
-1. Go to [console.firebase.google.com](https://console.firebase.google.com) and create a new project.
-2. Enable **Authentication** → Sign-in method → **Email/Password** (and optionally Google, Phone).
-3. Enable **Firestore Database** in production mode.
-
-#### Deploy Firestore rules and indexes
-
-```bash
-firebase login
-firebase use --add        # select your project
-firebase deploy --only firestore
-```
-
-This deploys `firestore.rules` and `firestore.indexes.json` from the repo root.
-
-### 3. Upstash Redis setup
-
-1. Create a free database at [upstash.com](https://upstash.com).
-2. Copy the **REST URL** and **REST Token** from the Upstash console.
-3. Add them to your `.env` file — **do not** prefix with `NEXT_PUBLIC_`.
-
-### 4. Environment variables
-
-Create a `.env` file in the project root:
-
-```env
-# Firebase (from Firebase console → Project Settings → Your apps)
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
-
-# Cloudinary (from cloudinary.com → Dashboard)
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
-NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset
-
-# Upstash Redis (server-side only — never NEXT_PUBLIC_)
-UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your_rest_token
-```
-
-#### Cloudinary setup (for image uploads)
-
-1. Create a free account at [cloudinary.com](https://cloudinary.com).
-2. In **Settings → Upload → Upload presets**, create an **unsigned** preset.
-3. Use that preset name as `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`.
-
-### 5. Create the first admin user
-
-Firestore security rules restrict management actions to the `admin` role. After signing up you need to manually elevate your account:
-
-1. Sign up at `/signup`.
-2. In the Firebase console open **Firestore → users → `<your-uid>`**.
-3. Set the `role` field to `"admin"` and `status` to `"active"`.
-
-All other users (tailors, delivery riders) register with `status: pending_approval` and must be approved by an admin from **Admin → Approvals**.
-
-### 6. Run locally
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
----
-
-## User Roles
-
-| Role | What they can do |
-|---|---|
-| **Admin** | Full access — manage users, orders, measurements, inventory, deliveries |
-| **Tailor** | View/record measurements, manage assigned orders, view inventory |
-| **Customer** | Place orders, view own measurements, track delivery |
-| **Delivery** | View and update assigned pickups and deliveries |
-
----
-
-## Available Scripts
-
-| Script | What it does |
-|---|---|
-| `npm run dev` | Start dev server on port 3000 |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run typecheck` | TypeScript check (no emit) |
-| `npm run lint` | ESLint |
-
----
-
-## E2E Tests (Playwright)
-
-Tests live in `tests/e2e/`. One smoke test runs without credentials; the rest require Firebase test accounts.
-
-```bash
-# Install browser (first time only)
-npx playwright install chromium
-
-# Smoke test — no credentials needed
-npx playwright test
-
-# Full suite with test credentials
-E2E_ADMIN_EMAIL=admin@example.com \
-E2E_ADMIN_PASSWORD=yourpassword \
-E2E_TAILOR_EMAIL=tailor@example.com \
-E2E_TAILOR_PASSWORD=yourpassword \
-npx playwright test
-```
-
----
-
-## Project Structure
-
-```
-tailorhub/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── orders/cache/          # Redis order cache endpoint
-│   │   │   └── notifications/
-│   │   │       ├── publish/           # Push notification to Redis LIST
-│   │   │       └── stream/            # SSE endpoint for real-time delivery
-│   │   ├── (public)/                  # Login, signup, forgot-password
-│   │   └── (authenticated)/           # Dashboard, orders, measurements,
-│   │                                  # customers, inventory, deliveries
-│   ├── components/                    # Reusable UI components
-│   ├── services/                      # Firebase + Redis service layer
-│   ├── contexts/                      # AuthContext, ThemeContext
-│   ├── hooks/                         # useNotifications, useNavBadges
-│   └── lib/
-│       ├── types.ts                   # Shared TypeScript types
-│       ├── firebase.ts                # Firebase app initialisation
-│       └── redis.ts                   # Upstash Redis client + cache keys
-├── firestore.rules                    # Firestore security rules
-├── firestore.indexes.json             # Composite indexes
-├── firebase.json                      # Firebase CLI config
-└── tests/e2e/                         # Playwright E2E tests
-```
-
----
+> The source code for this project is currently in a **Private Repository**. If you are a recruiter, hiring manager, or potential collaborator and wish to review the codebase, please contact me at **ranadanyalarshad@gmail.com**. I will be happy to add you as a collaborator.

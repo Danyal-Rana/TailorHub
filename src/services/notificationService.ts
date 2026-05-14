@@ -2,6 +2,14 @@ import { doc, updateDoc, addDoc, collection, getDocs, query, where, serverTimest
 import { db } from '@/lib/firebase';
 import type { Notification } from '@/lib/types';
 
+async function publishToRedis(uid: string, notification: Record<string, unknown>): Promise<void> {
+  fetch('/api/notifications/publish', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uid, notification }),
+  }).catch(() => {});
+}
+
 export async function createNotification(data: {
   recipientUid: string;
   type: Notification['type'];
@@ -10,7 +18,7 @@ export async function createNotification(data: {
   link: string | null;
   metadata?: Record<string, unknown>;
 }) {
-  return addDoc(collection(db, 'notifications'), {
+  const ref = await addDoc(collection(db, 'notifications'), {
     recipientUid: data.recipientUid,
     type: data.type,
     title: data.title,
@@ -20,6 +28,21 @@ export async function createNotification(data: {
     metadata: data.metadata ?? {},
     createdAt: serverTimestamp(),
   });
+
+  // Push to Redis queue so the SSE stream delivers it without waiting for Firestore onSnapshot
+  publishToRedis(data.recipientUid, {
+    id: ref.id,
+    recipientUid: data.recipientUid,
+    type: data.type,
+    title: data.title,
+    body: data.body,
+    link: data.link,
+    isRead: false,
+    metadata: data.metadata ?? {},
+    createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
+  });
+
+  return ref;
 }
 
 async function getUidsByRole(...roles: string[]): Promise<string[]> {
