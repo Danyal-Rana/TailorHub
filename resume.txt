@@ -1,0 +1,536 @@
+================================================================
+TAILORHUB — RESUME BULLET ANALYSIS
+Senior Engineering Manager / ex-FAANG Recruiter Lens
+Target: BS CS Final-Year | 5 Engineering Roles
+================================================================
+
+================================================================
+CODEBASE INVENTORY (scanned before any bullets were written)
+================================================================
+
+Total REST endpoints:          5
+  - GET    /api/orders/cache
+  - POST   /api/orders/cache
+  - DELETE /api/orders/cache
+  - POST   /api/notifications/publish
+  - GET    /api/notifications/stream  (SSE)
+
+Total Firestore collections:   8
+  users, customers, measurements, orders,
+  inventory, deliveries, notifications, measurementRequests
+
+Total Docker services:         0  (Vercel deployment — no containers)
+Total CI/CD pipeline stages:   0  (Vercel git-push auto-deploy only)
+Total external integrations:   4  (Firebase Auth, Cloud Firestore,
+                                   Cloudinary, Upstash Redis)
+Total IaC resources:           1  (Firestore Security Rules via Firebase CLI)
+Total LLM tools defined:       0
+Total RAG document types:      0
+
+Auth strategy:    Firebase Auth — 3 providers (Email/Password,
+                  Google OAuth, Phone SMS/RecaptchaVerifier);
+                  RBAC via Firestore Security Rules + client-side
+                  RoleGate/AuthGate; 4 roles (admin/tailor/customer/delivery)
+
+Caching layer:    Yes — Upstash Redis REST API (@upstash/redis)
+                  Orders: 60s TTL, 4 cache key patterns
+                  Notifications: Redis LIST queue, 1h TTL per user
+                  Invalidation: on createOrder + updateOrderStatus
+
+Async / queue:    Partial — Redis LIST as pub/sub notification queue
+                  (LPUSH on write, RPOP in SSE polling loop every 2s)
+                  SSE sessions bounded at 25s with automatic client reconnect
+
+Env variables:    18 total — 2-tier scope:
+                  7  NEXT_PUBLIC_ (Firebase config, Cloudinary cloud name)
+                  11 server-only  (Cloudinary secret, Upstash token, etc.)
+
+Multi-environment: Partial — .env (local) + Vercel dashboard (production)
+Monitoring:        None
+
+Order status stages:      7  (pending, measurement_needed, in_progress,
+                              ready, out_for_delivery, delivered, cancelled)
+Notification event types: 7  (order_status, new_order, pickup_assigned,
+                              delivery_arriving, measurement_request,
+                              approval_status, system)
+Measurement fields:      12  (9 kameez-specific, 3 shalwar-specific)
+Service modules:          8  (orderService, notificationService,
+                              customerService, measurementService,
+                              adminService, deliveryService,
+                              inventoryService, userService)
+Firestore Security Rule
+  match blocks:            8  (one per collection)
+TypeScript source files: ~80
+
+================================================================
+PROJECT: TailorHub  [Private — contact ranadanyalarshad@gmail.com]
+================================================================
+
+Stack: TypeScript · Next.js 16 (App Router) · React 19 · Firebase
+       (Auth + Firestore) · Upstash Redis · Cloudinary · Tailwind CSS
+       · Playwright · Vercel
+
+What it is: A multi-role tailor-shop management platform with 8 Firestore
+collections, 4-role RBAC enforced at Security Rules and client guard layers,
+Redis-backed order caching with TTL invalidation, and a dual-channel real-
+time notification system (Firestore onSnapshot + Redis pub/sub over SSE).
+
+================================================================
+ROLE 1: FULL-STACK ENGINEER
+================================================================
+
+Full-stack bullets lead with backend/system-level complexity (60%),
+add frontend bullets only where they show engineering depth.
+
+PATTERN 1 — OUTCOME FIRST:
+
+- Reduced Firestore order-list read cost to 0 on cache hits by implementing
+  a Redis TTL cache (60s, 4 key patterns) via server-side Next.js Route
+  Handlers, cutting repetitive reads for the 2 highest-volume roles on
+  every /orders page load.
+
+- Delivered new notifications to clients in ≤2s without long-polling by
+  engineering a dual-channel push system — Firestore onSnapshot (persistent
+  WebSocket) + Redis LIST polled over SSE every 2s — with ID-based client
+  deduplication preventing double-render across the 2 delivery channels.
+
+- Enforced zero-bypass RBAC across all 8 Firestore collections by authoring
+  Security Rules that independently verify uid, role, and status on every
+  read/write — ensuring client-side guard bypasses cannot reach raw data.
+
+PATTERN 2 — STAR (Problem → Engineering Action → Result):
+
+- Resolved a Timestamp serialization failure between Firestore objects and
+  Redis JSON storage by building a bidirectional conversion layer:
+  serializeOrder() converts Timestamps to ISO-8601 on cache write,
+  deserializeOrder() reconstructs .toDate()-compatible proxies on read —
+  preserving the interface contract of all 3 downstream UI components.
+
+- Resolved Upstash credential exposure risk in a client-rendered app by
+  proxying all 3 Redis operation types (read/write/invalidate) through
+  server-side Route Handlers — ensuring the Upstash REST token is absent
+  from every browser JavaScript bundle.
+
+- Resolved SSE disconnection on Vercel's 25s serverless timeout by
+  designing bounded-session streaming with EventSource.onerror reconnect
+  (1s delay) on the client — maintaining uninterrupted notification delivery
+  across session resets with no user-visible gap.
+
+PATTERN 3 — WWH (What / Why / How — Architecture):
+
+- Architected a 7-stage order state machine (pending → measurement_needed →
+  in_progress → ready → out_for_delivery → delivered → cancelled) with per-
+  transition cache invalidation and customer notification dispatch — maintaining
+  data consistency across 3 concurrent user roles modifying the same Firestore
+  order document.
+
+- Engineered a Timestamp-safe Redis caching pipeline to bridge the type
+  mismatch between Firebase Timestamp objects and JSON-serializable Redis
+  values, using ISO-8601 as intermediate format and a .toDate()-proxy shim on
+  deserialization — enabling cache-hit responses with 0 component-layer changes.
+
+- Built 3-provider Firebase Authentication (Email/Password, Google OAuth,
+  Phone SMS via RecaptchaVerifier) with a unified Firestore AppUser type
+  to consolidate identity across 4 user roles regardless of sign-in method,
+  using a single onAuthStateChanged listener.
+
+PATTERN 4 — SCALE & SCOPE:
+
+- Architected a full-stack platform supporting 4 user roles, 8 Firestore
+  collections, 5 REST API routes, 3 Firebase auth providers, 4 external
+  integrations, 7 order status stages, and 7 notification event types —
+  deployed to Vercel with 18 env vars across 2 access tiers.
+
+- Engineered a notification system spanning 7 event types, 2 delivery channels
+  (Firestore WebSocket + Redis SSE), per-user LIST queues (1h TTL), and
+  client-side deduplication across 50 most-recent notifications per user.
+
+- Built a multi-role measurement module supporting 3 dress types, 12 fields
+  (9 kameez-specific with Urdu labels, 3 shalwar-specific), versioned records
+  per customer, and a 4-stage measurement request workflow.
+
+================================================================
+ROLE 2: BACKEND ENGINEER
+================================================================
+
+Backend bullets go deep on data modeling, API design, auth, caching,
+validation. Frontend is invisible in this section.
+
+PATTERN 1 — OUTCOME FIRST:
+
+- Eliminated repeated Firestore list query cost by designing a 4-key Redis
+  caching strategy (orders:all, orders:customer:{uid}, orders:delivery:{uid},
+  60s TTL) with targeted key deletion on createOrder and updateOrderStatus —
+  preventing stale reads while avoiding full-cache flushes on unrelated writes.
+
+- Enforced data access control for 8 Firestore collections by authoring
+  Security Rules with per-role, per-status conditions checking request.auth.uid
+  — eliminating server-bypass attack vectors that client-side guards cannot
+  block.
+
+- Guaranteed notification fan-out to all active staff (admin + tailor) in
+  parallel by querying recipient UIDs by role and dispatching Firestore writes
+  via Promise.all — avoiding N serial round-trips on every new-order event.
+
+PATTERN 2 — STAR:
+
+- Resolved a type-system gap where Firestore Timestamp objects fail JSON
+  serialization to Redis by implementing serializeOrder() / deserializeOrder()
+  utilities that convert to ISO-8601 for cache storage and reconstruct
+  .toDate()-compatible proxy objects on read — with 0 changes to the 3
+  consuming UI components.
+
+- Resolved a dual-enforcement gap where role checks existed client-side only
+  by authoring Firestore Security Rules with 8 match blocks covering every
+  collection — creating 2 independent RBAC layers where bypassing one does
+  not bypass the other.
+
+- Resolved notification delivery coupling between creation latency and UI
+  responsiveness by fire-and-forgetting a Redis LIST publish immediately after
+  Firestore write — allowing the SSE stream to deliver in ≤2s while Firestore
+  propagation completes asynchronously.
+
+PATTERN 3 — WWH:
+
+- Modeled an 8-collection Firestore schema with 5 cross-collection reference
+  fields (customerId, linkedUserId, orderId, recipientUid, assignedTailor)
+  to support 4 user roles with distinct read scopes — avoiding JOIN overhead
+  by denormalizing role-specific foreign keys into order and delivery documents.
+
+- Designed a 5-endpoint internal API surface using Next.js Route Handlers as
+  a server-side Redis proxy, implementing the full cache lifecycle: GET (read),
+  POST (write with 60s TTL), DELETE (targeted key invalidation) — keeping all
+  Upstash credentials server-side only.
+
+- Engineered a 3-provider auth architecture (Email/Password, Google OAuth,
+  Phone SMS) with a unified AppUser Firestore document and a 2-state approval
+  workflow (pending_approval → active) for tailor and delivery accounts
+  requiring admin sign-off before system access.
+
+PATTERN 4 — SCALE & SCOPE:
+
+- Engineered a backend service layer across 8 TypeScript modules (orderService,
+  notificationService, customerService, measurementService, adminService,
+  deliveryService, inventoryService, userService) with 4 external integrations
+  and Zod-validated input at all form boundaries.
+
+- Architected a notification data model supporting 7 event types, 2 delivery
+  channels, per-user LIST queues (1h TTL), and Security Rules restricting
+  isRead mutations to the recipientUid only — enforcing integrity at the
+  infrastructure layer, not the application layer.
+
+- Implemented a multi-role query engine dispatching 3 distinct Firestore
+  query strategies (unconstrained for admin/tailor, customerUid-filtered for
+  customer, deliveryBy-filtered for delivery) with 4-key Redis caching and
+  targeted invalidation on 2 mutation operations.
+
+================================================================
+ROLE 3: BACKEND + INFRASTRUCTURE ENGINEER
+================================================================
+
+Bullets must show BOTH server-side depth AND deployment / pipeline maturity.
+
+PATTERN 1 — OUTCOME FIRST:
+
+- Eliminated Upstash credential exposure from the browser bundle by routing
+  all Redis operations through 3 Next.js server-side Route Handlers — converting
+  a direct-client-call vulnerability into a secure BFF (backend-for-frontend)
+  pattern with 0 client-side secret access.
+
+- Reduced order-list Firestore reads to 0 on cache-hit requests by implementing
+  a server-side Redis cache with 60s TTL and per-key invalidation triggered
+  synchronously on both createOrder and updateOrderStatus mutations.
+
+- Prevented stale data delivery after mutations by wiring targeted cache
+  invalidation into both write paths — createOrder deletes orders:all +
+  orders:customer:{uid}, updateOrderStatus deletes the same 2 keys — with
+  no over-invalidation affecting unrelated cache entries.
+
+PATTERN 2 — STAR:
+
+- Resolved Vercel serverless timeout constraints for streaming responses by
+  designing a 25s bounded SSE loop (ReadableStream with cancel()) and client-
+  side EventSource.onerror reconnect (1s delay) — delivering continuous real-
+  time push without long-lived server connections or WebSocket infrastructure.
+
+- Resolved env parity risk between local dev and Vercel production by enforcing
+  strict variable naming: 7 NEXT_PUBLIC_ keys for client-bundled config, 11
+  server-only names for credentials — ensuring no sensitive token enters the
+  Next.js browser bundle across 18 total variables.
+
+- Resolved SSE buffering failures on proxied deployments by adding
+  X-Accel-Buffering: no and Cache-Control: no-cache, no-transform headers to
+  the /api/notifications/stream endpoint — ensuring Nginx-fronted and Vercel
+  edge deployments flush frames immediately without batching.
+
+PATTERN 3 — WWH:
+
+- Engineered a 3-Route-Handler Redis proxy (GET/POST/DELETE for cache, POST
+  for publish, GET SSE for stream) to abstract Upstash REST calls behind a
+  server boundary — enabling the client-rendered app to leverage Redis without
+  any credential leakage, using the BFF pattern.
+
+- Built a dual-channel notification infrastructure combining Firestore WebSocket
+  subscriptions (guaranteed delivery, read-state sync) and Redis LIST-backed
+  SSE polling (sub-2s first delivery) — separating reliability and latency
+  concerns into 2 independent, complementary delivery mechanisms.
+
+- Architected a Node.js ReadableStream SSE endpoint with cancel() lifecycle
+  support, 2s polling interval, heartbeat comment frames, and 25s session
+  bounding — implementing server-push within Vercel's serverless execution
+  limits without requiring persistent connection infrastructure.
+
+PATTERN 4 — SCALE & SCOPE:
+
+- Architected a backend + infrastructure layer comprising 5 REST API endpoints,
+  8 Firestore service modules, 4 external integrations, 18 env variables
+  (7 public / 11 server-only), 4 Redis cache key patterns across 2 TTL
+  policies (60s and 1h), and Vercel git-integration deployment.
+
+- Engineered a cache infrastructure spanning 4 Redis key patterns, 2 TTL
+  durations (60s order lists, 1h notification queues), and 2 invalidation
+  trigger points — integrated across 8 Firestore service functions with
+  fire-and-forget cache writes and synchronous invalidation on mutations.
+
+- Built an internal API surface across 3 Route Handler files implementing
+  5 HTTP operations with consistent 400/200 response contracts, Content-Type
+  enforcement, and no-transform cache headers — serving as the sole server-
+  side boundary between the React client and Upstash Redis.
+
+================================================================
+ROLE 4: DEVOPS / CLOUD / INFRASTRUCTURE ENGINEER
+================================================================
+
+NOTE: This role has the least evidence in this codebase — no Dockerfile,
+no CI/CD pipeline, no IaC beyond Firestore rules. Bullets are accurate
+but represent the ceiling of what the codebase supports. See Honest
+Assessment for the 1 addition that would immediately double this section.
+
+PATTERN 1 — OUTCOME FIRST:
+
+- Eliminated client-side secret exposure for 4 sensitive credentials (Upstash
+  REST token, Cloudinary API key/secret, JWT key) by enforcing server-only
+  env var naming across 11 of 18 total variables — leveraging Next.js build-
+  time bundling rules for guarantee, requiring no runtime checks.
+
+- Deployed Firestore access control policy across 8 collection match blocks
+  via Firebase CLI (firebase deploy --only firestore) — replacing manual
+  console edits with version-controlled, repeatable Security Rules deployment
+  consistent across every environment.
+
+- Achieved repeatable production deployments with 0 manual steps by configuring
+  Vercel git integration on main — triggering auto-build of a standalone Next.js
+  artifact (output: 'standalone') on every push.
+
+PATTERN 2 — STAR:
+
+- Resolved Vercel serverless streaming constraints by replacing long-lived SSE
+  connections with 25s bounded ReadableStream sessions, relying on EventSource's
+  built-in reconnection — fitting real-time delivery inside serverless execution
+  limits without requiring WebSocket servers or additional infrastructure.
+
+- Resolved environment config drift risk between local dev and Vercel production
+  by documenting all 18 env variables with access-tier labels in .env.example
+  (NEXT_PUBLIC_ vs server-only) — preventing NEXT_PUBLIC_SECRET misconfiguration
+  that would expose credentials in the browser bundle.
+
+- Resolved SSE proxy buffering on edge deployments by setting
+  X-Accel-Buffering: no and Cache-Control: no-cache, no-transform on the
+  streaming endpoint — ensuring intermediary Nginx reverse proxies and Vercel's
+  edge network flush SSE frames without batching delay.
+
+PATTERN 3 — WWH:
+
+- Configured standalone Next.js build mode (output: 'standalone') to generate
+  a self-contained deployment artifact bundling all runtime dependencies —
+  enabling future containerization with a minimal Dockerfile and no host-side
+  npm install step.
+
+- Deployed Firestore Security Rules as version-controlled declarative
+  infrastructure using Firebase CLI — covering 8 collections, 4 role conditions,
+  and 3 status checks in a single firestore.rules file, enabling policy audit
+  and rollback via git history.
+
+- Engineered a 2-tier env var architecture separating 7 NEXT_PUBLIC_ client-
+  bundled identifiers from 11 server-only credentials across 4 cloud service
+  integrations — enforced by Next.js build-time pipeline with zero runtime
+  configuration overhead.
+
+PATTERN 4 — SCALE & SCOPE:
+
+- Managed a 4-service cloud integration (Firebase Auth + Firestore, Cloudinary,
+  Upstash Redis) across 18 environment variables with 2-tier secret scoping —
+  deployed to Vercel with auto-deploy on push to main, 3 Firebase auth providers,
+  and Playwright E2E tests in tests/e2e/.
+
+- Administered Firestore Security Rules covering 8 collection match blocks,
+  4 role conditions (admin, tailor, customer, delivery), and 3 user status
+  states — enforcing read/write access policy as version-controlled
+  infrastructure with no application-layer middleware overhead.
+
+- Configured a Vercel deployment pipeline for a Next.js 16 standalone build
+  integrating 4 external cloud services, 18 env vars across dev and prod,
+  3 Firebase auth providers, and auto-deploy on push to main — with
+  public/secret variable scope enforced at build time.
+
+================================================================
+ROLE 5: GENERATIVE AI / RAG / AGENTS ENGINEER
+================================================================
+
+CRITICAL NOTE: This codebase contains ZERO LLM integrations, no RAG
+pipeline, and no agent components. Bullets below frame real-time data
+streaming infrastructure that is architecturally identical to AI streaming
+pipelines. They demonstrate transferable patterns but are NOT direct AI
+evidence. See Honest Assessment — this role requires an actual LLM addition.
+
+PATTERN 1 — OUTCOME FIRST:
+
+- Delivered streaming event payloads to browser clients in ≤2s via Server-
+  Sent Events over a Redis LIST queue — implementing the identical server-push
+  architecture used for LLM token streaming, with heartbeat keep-alive and
+  EventSource automatic client reconnection on session close.
+
+- Protected 2 external API credentials (Upstash REST token, Cloudinary API
+  secret) from client-side exposure by routing all calls through server-side
+  Route Handlers — applying the same credential isolation pattern required for
+  every production LLM API integration (OpenAI, Anthropic, Gemini).
+
+- Built a bounded-session SSE stream (25s max, 2s poll) delivering real-time
+  payloads within Vercel serverless constraints — demonstrating production-
+  aware streaming latency/timeout trade-off design central to LLM output
+  delivery on serverless infrastructure.
+
+PATTERN 2 — STAR:
+
+- Resolved SSE proxy buffering on edge deployments by adding
+  X-Accel-Buffering: no to the streaming endpoint — the same fix required
+  for LLM token streaming behind Nginx or Vercel's edge network, where
+  buffering prevents incremental token delivery to the client.
+
+- Resolved dual-channel deduplication where Firestore onSnapshot and Redis
+  SSE could deliver the same notification concurrently by implementing ID-based
+  deduplication in client state — mirroring the idempotency requirements in
+  multi-channel AI agent output delivery systems.
+
+- Resolved serverless timeout constraints for server-push by designing a
+  session-bounded SSE loop (25s) with client-side EventSource reconnect —
+  demonstrating the architectural compromise required for streaming LLM
+  responses from serverless functions without a persistent process.
+
+PATTERN 3 — WWH:
+
+- Built a Redis LIST pub/sub queue (LPUSH on publish, RPOP in polling loop,
+  1h TTL) to route per-user event payloads to the correct SSE consumer —
+  demonstrating the foundational queue-routing architecture used in multi-
+  agent coordination systems where outputs are dispatched to specific channels.
+
+- Architected a dual-channel event pipeline (Firestore WebSocket for guaranteed
+  delivery + Redis SSE for low-latency first delivery) to separate reliability
+  and latency concerns — applying the same pattern used in production AI
+  streaming with fallback delivery mechanisms.
+
+- Engineered a Node.js ReadableStream SSE endpoint with cancellation support,
+  SSE heartbeat frames (: heartbeat), and bounded-session design — the same
+  implementation pattern required for LLM token streaming endpoints in
+  Next.js App Router on serverless infrastructure.
+
+PATTERN 4 — SCALE & SCOPE:
+
+- Engineered a real-time event streaming infrastructure supporting 7 event
+  types, 2 delivery channels, per-user Redis queues (1h TTL), and client-side
+  deduplication — demonstrating the streaming pipeline architecture directly
+  transferable to LLM agent output delivery systems.
+
+- Architected a server-side credential proxy across 3 Route Handlers and 4
+  external service integrations — applying the server-boundary API key isolation
+  pattern required for every production LLM integration where provider keys
+  must not reach browser clients.
+
+- Implemented a full pub/sub pipeline spanning 4 components (publisher service
+  → Redis LIST → SSE polling loop → React EventSource consumer) with bounded
+  session management and automatic reconnection — demonstrating end-to-end
+  streaming system design transferable to LLM agent output pipelines.
+
+================================================================
+HONEST ASSESSMENT
+================================================================
+
+WHAT'S STRONG (top 3 resume-worthy signals):
+
+1. DUAL-LAYER RBAC ARCHITECTURE
+   Firestore Security Rules + client-side RoleGate/AuthGate = 2 independent
+   enforcement layers. Most student projects have one or the other. Authoring
+   Security Rules correctly across 8 collections with uid/role/status checks
+   is a real backend maturity signal that survives technical recruiter review.
+
+2. REDIS CACHING WITH DELIBERATE INVALIDATION DESIGN
+   Not just "added Redis" — designed a 4-key cache schema, chose 60s TTL
+   deliberately, wired targeted per-key invalidation on 2 specific mutation
+   operations, and built a Timestamp serialization bridge for the Firestore-
+   to-JSON impedance mismatch. This is systems thinking, not tutorial-following.
+
+3. DUAL-CHANNEL REAL-TIME NOTIFICATION SYSTEM
+   Combining Firestore onSnapshot (reliability) with Redis LIST + SSE
+   (latency) and handling ID-based deduplication client-side is a non-trivial
+   architectural decision. It demonstrates awareness of the reliability-vs-
+   latency trade-off that FAANG interviewers probe in system design rounds.
+
+WHAT'S MISSING (top 3 gaps):
+
+1. NO CI/CD PIPELINE [45-minute fix]
+   Zero GitHub Actions. A single workflow (lint → typecheck → Vercel preview
+   deploy) immediately adds 4 DevOps bullets with real stage counts. Without
+   it, the DevOps role is a hard sell to any technical recruiter screening
+   for pipeline experience.
+
+2. NO LLM INTEGRATION [2-4 hour fix]
+   The Gen AI role has zero direct evidence. Adding 1 Anthropic API call
+   (e.g., auto-generate order notes from fabric + customer context, streamed
+   via SSE) creates genuine Gen AI bullets around prompt engineering, server-
+   side key isolation, and streaming output — and the streaming infrastructure
+   already built here maps directly to that implementation.
+
+3. NO OBSERVABILITY / ERROR TRACKING [30-minute fix]
+   No Sentry, no logging, no performance monitoring. Adding Sentry (free tier)
+   gives a real "reduced MTTR" bullet. Without observability, the system has
+   no operational story — which matters for Backend + Infra and DevOps roles
+   specifically, where recruiters expect at least basic error tracking.
+
+WHICH ROLE DOES THIS CODEBASE SUPPORT BEST:
+
+Full-Stack Engineer, closely followed by Backend Engineer. The evidence is
+genuine: an 8-collection Firestore data model with cross-collection references,
+a 4-role RBAC system enforced at 2 independent layers, a Redis caching layer
+with deliberate TTL and invalidation design, a dual-channel notification system
+with architectural reasoning behind both channels, a Timestamp serialization
+bridge between Firebase and JSON storage, and 3-provider auth integration with
+a role-specific approval workflow. None of these are boilerplate CRUD — each
+represents an engineering decision with visible trade-offs. A recruiter reading
+the bullets alongside the actual codebase will find the story consistent and
+defensible. The 4 distinct role-specific dashboards also round out the full-
+stack narrative with real multi-role UX complexity.
+
+WEAKEST EVIDENCE PER ROLE:
+
+- Full-Stack: Strong — add 1 frontend perf bullet (lazy loading, Suspense, or
+  bundle analysis) to complete the story beyond backend depth.
+
+- Backend: Strong — run a k6 or Autocannon load test to get real p95 latency
+  numbers; current latency claims (≤2s) are architectural estimates, not
+  measured benchmarks.
+
+- Backend + Infra: Moderate — add a Dockerfile (multi-stage Node.js build) and
+  this section immediately becomes strong; without containers the infra story
+  is Vercel config + env var management only.
+
+- DevOps / Cloud: Weak — no CI/CD is the critical gap; a 3-stage GitHub
+  Actions workflow (lint, typecheck, deploy) doubles bullet count and adds the
+  1 thing DevOps recruiters screen for first.
+
+- Gen AI: No evidence — zero AI components in this codebase; add any LLM API
+  call (Anthropic messages API, streamed via the SSE infrastructure already
+  built here) to convert analogy into evidence.
+
+================================================================
+END OF ANALYSIS
+================================================================
